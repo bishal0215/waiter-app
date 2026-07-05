@@ -5,4 +5,5 @@ __pycache__/
 db.sqlite3
 *.sqlite3
 .env
-staticfiles/
+waiter_app/staticfiles/
+waiter_app/db.sqlite3
