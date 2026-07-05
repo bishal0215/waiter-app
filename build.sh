@@ -9,8 +9,10 @@ python manage.py seed
 echo "
 from django.contrib.auth.models import User
 from core.models import UserProfile
+import os
+password = os.environ.get('ADMIN_PASSWORD', 'changeme123')
 if not User.objects.filter(username='admin').exists():
-    u = User.objects.create_superuser('admin', '', 'Bishal@2030')
+    u = User.objects.create_superuser('admin', '', password)
     p, _ = UserProfile.objects.get_or_create(user=u)
     p.role = 'admin'
     p.save()
