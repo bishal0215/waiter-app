@@ -1,0 +1,62 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Add Menu Item{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0">Add Menu Item</h4>
+    <a href="{% url 'admin_menu' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-12 col-md-6">
+<div class="card p-4">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Name</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Price</label>
+            <input type="number" name="price" step="0.01" class="form-control" required>
+        </div>
+        <div class="mb-3">
+    <label class="form-label fw-semibold">Category</label>
+    <select name="category" class="form-select" id="category-select">
+        <option value="food">Food</option>
+        <option value="drink">Drink</option>
+        <option value="dessert">Dessert</option>
+    </select>
+</div>
+
+<div class="mb-3" id="food-type-section" style="display:none;">
+    <label class="form-label fw-semibold">Food Type</label>
+    <select name="food_type" class="form-select">
+        <option value="veg">🟢 Vegetarian</option>
+        <option value="non_veg">🔴 Non-Vegetarian</option>
+    </select>
+</div>
+
+<script>
+const catSelect = document.getElementById('category-select');
+const foodType  = document.getElementById('food-type-section');
+
+catSelect.addEventListener('change', function() {
+    foodType.style.display = this.value === 'food' ? 'block' : 'none';
+});
+
+// Show on load if food is selected
+if (catSelect.value === 'food') foodType.style.display = 'block';
+</script>
+        <div class="mb-4 form-check">
+            <input type="checkbox" name="is_available" class="form-check-input"
+                   id="available" checked>
+            <label class="form-check-label fw-semibold" for="available">Available</label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add Item</button>
+    </form>
+</div>
+</div>
+</div>
+
+{% endblock %}

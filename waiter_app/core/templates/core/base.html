@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Waiter App{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; }
+        .navbar-brand { font-weight: bold; font-size: 1.1rem; }
+        .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 12px; }
+        .badge-pill { border-radius: 99px; }
+        @media (max-width: 576px) {
+            .page-body { padding: 1rem !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-dark px-3 py-2 sticky-top">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">🍽️ Waiter App</a>
+    <div class="d-flex align-items-center gap-3">
+    <span class="text-white small" id="live-clock">--:--:--</span>
+
+    {% if request.user.profile.role == 'admin' %}
+        <a href="{% url 'admin_dashboard' %}" class="text-white text-decoration-none small">
+            <i class="bi bi-gear"></i> Admin
+        </a>
+        <a href="{% url 'dashboard' %}" class="text-white text-decoration-none small">
+            <i class="bi bi-shop"></i> Waiter
+        </a>
+        <a href="{% url 'kitchen' %}" class="text-white text-decoration-none small">
+            <i class="bi bi-egg-fried"></i> Kitchen
+        </a>
+
+    {% elif request.user.profile.role == 'waiter' %}
+        <a href="{% url 'dashboard' %}" class="text-white text-decoration-none small">
+            <i class="bi bi-shop"></i> Dashboard
+        </a>
+
+    {% elif request.user.profile.role == 'chef' %}
+        <a href="{% url 'kitchen' %}" class="text-white text-decoration-none small">
+            <i class="bi bi-egg-fried"></i> Kitchen
+        </a>
+    {% endif %}
+
+    <span class="badge 
+        {% if request.user.profile.role == 'admin' %}bg-danger
+        {% elif request.user.profile.role == 'chef' %}bg-warning text-dark
+        {% else %}bg-primary{% endif %}">
+        {{ request.user.profile.role }}
+    </span>
+    <span class="text-secondary small">{{ request.user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+</div>
+</nav>
+
+<!-- Page Content -->
+<div class="container-fluid page-body py-4 px-3 px-md-4" style="max-width:1200px;">
+    {% block content %}{% endblock %}
+</div>
+
+<!-- JavaScript -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
+<script>
+function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    const clockEl = document.getElementById('live-clock');
+    if (clockEl) clockEl.textContent = timeStr;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

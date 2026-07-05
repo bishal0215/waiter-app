@@ -1,0 +1,199 @@
+{% extends 'core/base.html' %}
+{% block title %}Kitchen Panel{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">🧑‍🍳 Kitchen Panel</h4>
+        <small class="text-muted">Updates every 5 seconds</small>
+    </div>
+    <span class="badge bg-success" id="live-badge">
+        <span class="spinner-grow spinner-grow-sm me-1"></span>
+        Live
+    </span>
+</div>
+
+<div id="orders-container">
+    {% if orders %}
+    <div class="row g-3">
+        {% for order in orders %}
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card p-3 border-2 {% if order.status == 'pending' %}border-warning{% else %}border-primary{% endif %}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="fw-bold mb-0">Table {{ order.table.number }}</h5>
+                    {% if order.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">⏳ Pending</span>
+                    {% else %}
+                        <span class="badge bg-primary">🔥 Preparing</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted mb-2 d-block">
+                    Order #{{ order.daily_order_number }} · {{ order.created_at|time:"H:i" }}
+                    <span class="badge bg-secondary ms-1" id="k-elapsed-{{ order.id }}">
+                    -- min
+                    </span>
+                </small>
+                <ul class="list-unstyled mb-3">
+                    {% for item in order.items.all %}
+                    <li class="py-1 border-bottom small">
+                        <strong>{{ item.quantity }}×</strong> {{ item.menu_item.name }}
+                        {% if item.note %}
+                            <div class="text-warning small">📝 {{ item.note }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="d-flex gap-2">
+                    {% if order.status == 'pending' %}
+                        <form method="post" action="{% url 'update_order_status' order.id %}" class="flex-fill">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="preparing">
+                            <button class="btn btn-primary w-100 btn-sm">🔥 Preparing</button>
+                        </form>
+                        <form method="post" action="{% url 'update_order_status' order.id %}" class="flex-fill">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="served">
+                            <button class="btn btn-success w-100 btn-sm">✅ Ready</button>
+                        </form>
+                    {% elif order.status == 'preparing' %}
+                        <form method="post" action="{% url 'update_order_status' order.id %}" class="flex-fill">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="pending">
+                            <button class="btn btn-secondary w-100 btn-sm">↩ Pending</button>
+                        </form>
+                        <form method="post" action="{% url 'update_order_status' order.id %}" class="flex-fill">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="served">
+                            <button class="btn btn-success w-100 btn-sm">✅ Ready</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted mt-5">
+        <div style="font-size:3rem;">✅</div>
+        <h5 class="mt-3">All caught up — no pending orders!</h5>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateKitchen() {
+    fetch('/api/kitchen/')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('orders-container');
+            if (data.orders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted mt-5">
+                        <div style="font-size:3rem;">✅</div>
+                        <h5 class="mt-3">All caught up — no pending orders!</h5>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="row g-3">` +
+                data.orders.map(order => `
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card p-3 border-2 ${order.status === 'pending' ? 'border-warning' : 'border-primary'}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0">Table ${order.table}</h5>
+                                ${order.status === 'pending'
+                                    ? '<span class="badge bg-warning text-dark">⏳ Pending</span>'
+                                    : '<span class="badge bg-primary">🔥 Preparing</span>'}
+                            </div>
+                            <small class="text-muted mb-2 d-block">
+                                Order #${order.id} · ${order.time}
+                                <span class="badge ${order.minutes_ago > 20 ? 'bg-danger' : 'bg-secondary'} ms-1">
+                                    ${order.minutes_ago < 60 
+                                    ? order.minutes_ago + ' min' 
+                                    : Math.floor(order.minutes_ago/60) + 'h ' + (order.minutes_ago%60) + 'm'}
+                                </span>
+                            </small>
+                            <ul class="list-unstyled mb-3">
+                                ${order.items.map(item => `
+                                    <li class="py-1 border-bottom small">
+                                        <strong>${item.quantity}×</strong> ${item.name}
+                                        ${item.note ? `<div class="text-warning small">📝 ${item.note}</div>` : ''}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            <div class="d-flex gap-2">
+                                ${order.status === 'pending' ? `
+                                    <form method="post" action="/order/${order.id}/status/" class="flex-fill">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                                        <input type="hidden" name="status" value="preparing">
+                                        <button class="btn btn-primary w-100 btn-sm">🔥 Preparing</button>
+                                    </form>
+                                    <form method="post" action="/order/${order.id}/status/" class="flex-fill">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                                        <input type="hidden" name="status" value="served">
+                                        <button class="btn btn-success w-100 btn-sm">✅ Ready</button>
+                                    </form>
+                                ` : `
+                                    <form method="post" action="/order/${order.id}/status/" class="flex-fill">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                                        <input type="hidden" name="status" value="pending">
+                                        <button class="btn btn-secondary w-100 btn-sm">↩ Pending</button>
+                                    </form>
+                                    <form method="post" action="/order/${order.id}/status/" class="flex-fill">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                                        <input type="hidden" name="status" value="served">
+                                        <button class="btn btn-success w-100 btn-sm">✅ Ready</button>
+                                    </form>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `).join('') + `</div>`;
+        })
+        .catch(() => {
+            document.getElementById('live-badge').className = 'badge bg-danger';
+            document.getElementById('live-badge').textContent = 'Offline';
+        });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Poll every 5 seconds
+setInterval(updateKitchen, 5000);
+// Kitchen elapsed time
+function updateKitchenElapsed() {
+    fetch('/api/kitchen/')
+        .then(r => r.json())
+        .then(data => {
+            data.orders.forEach(order => {
+                const el = document.getElementById(`k-elapsed-${order.id}`);
+                if (el && order.minutes_ago !== undefined) {
+                    const mins = order.minutes_ago;
+                    el.textContent = mins < 60
+                        ? `${mins} min`
+                        : `${Math.floor(mins/60)}h ${mins%60}m`;
+                    el.className = mins > 20
+                        ? 'badge bg-danger ms-1'
+                        : 'badge bg-secondary ms-1';
+                }
+            });
+        });
+}
+setInterval(updateKitchenElapsed, 10000);
+updateKitchenElapsed();
+</script>
+
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0"><i class="bi bi-receipt"></i> All Orders</h4>
+</div>
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <a href="{% url 'admin_orders' %}"
+       class="btn btn-sm {% if not status %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        All
+    </a>
+    {% for s, label in statuses %}
+    <a href="?status={{ s }}"
+       class="btn btn-sm {% if status == s %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ label }}
+    </a>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+    <tr>
+        <th>#</th>
+        <th>Table</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Ordered</th>
+        <th>Served</th>
+    </tr>
+</thead>
+<tbody>
+    {% for order in orders %}
+    <tr>
+        <td>
+            <strong>#{{ order.daily_order_number }}</strong>
+            <small class="text-muted d-block">ID: {{ order.id }}</small>
+        </td>
+        <td>Table {{ order.table.number }}</td>
+        <td>
+            {% for item in order.items.all %}
+                <div>{{ item.quantity }}× {{ item.menu_item.name }}</div>
+            {% endfor %}
+        </td>
+        <td class="fw-semibold">Rs.{{ order.total_price }}</td>
+        <td>
+            {% if order.status == 'paid' %}
+                <span class="badge bg-success">Paid</span>
+            {% elif order.status == 'served' %}
+                <span class="badge bg-info">Served</span>
+            {% elif order.status == 'preparing' %}
+                <span class="badge bg-primary">Preparing</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">Pending</span>
+            {% endif %}
+        </td>
+        <td class="text-muted">{{ order.created_at|date:"d M Y, H:i" }}</td>
+        <td class="text-muted">
+            {% if order.served_at %}
+                {{ order.served_at|date:"d M Y, H:i" }}
+            {% else %}
+                —
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted py-4">No orders found.</td>
+        </tr>
+    {% endfor %}
+</tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

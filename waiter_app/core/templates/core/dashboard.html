@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Live indicator -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">🍽️ Waiter Dashboard</h5>
+    <span class="badge bg-success" id="live-badge">
+        <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>
+        Live
+    </span>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4" id="stats-bar">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-primary">{{ total_tables }}</div>
+            <div class="text-muted small">Total Tables</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-warning" id="stat-occupied">{{ occupied_count }}</div>
+            <div class="text-muted small">Occupied</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-success" id="stat-free">{{ free_count }}</div>
+            <div class="text-muted small">Free</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-danger" id="stat-ready">{{ ready_count }}</div>
+            <div class="text-muted small">Ready to Serve</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-secondary" id="stat-pending">{{ pending_count }}</div>
+            <div class="text-muted small">Pending Orders</div>
+        </div>
+    </div>
+</div>
+
+<!-- Ready Banner -->
+<div id="ready-banner" style="display:none;" class="alert border-success bg-success bg-opacity-10 d-flex align-items-start gap-3 mb-4">
+    <span style="font-size:1.8rem;">🔔</span>
+    <div>
+        <strong class="text-success">Orders ready to serve!</strong>
+        <div class="d-flex flex-wrap gap-2 mt-2" id="ready-tags"></div>
+    </div>
+</div>
+
+<!-- Waiter Quick Actions -->
+{% if waiter_perms.can_add_menu or waiter_perms.can_add_table %}
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    {% if waiter_perms.can_add_menu %}
+        <a href="{% url 'admin_create_menu_item' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Add Menu Item
+        </a>
+        <a href="{% url 'admin_menu' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-egg-fried"></i> View Menu
+        </a>
+    {% endif %}
+    {% if waiter_perms.can_add_table %}
+        <a href="{% url 'admin_create_table' %}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-plus-circle"></i> Add Table
+        </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Active Tables -->
+{% if active_tables %}
+<h6 class="fw-bold text-danger mb-3">
+    🔴 Active Tables <span class="badge bg-secondary ms-1" id="active-count">{{ active_tables|length }}</span>
+</h6>
+<div class="row g-3 mb-4" id="active-tables-grid">
+    {% for table in active_tables %}
+    {% with order=table.active_order %}
+    <div class="col-12 col-sm-6 col-lg-4">
+        <a href="{% url 'table_order' table.id %}" class="text-decoration-none">
+            <div class="card h-100 p-3 {% if order.status == 'served' %}border-success border-2{% endif %}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0 fw-bold">Table {{ table.number }}</h5>
+                    {% if order %}
+                        {% if order.status == 'served' %}
+                            <span class="badge bg-success">✅ Ready</span>
+                        {% elif order.status == 'preparing' %}
+                            <span class="badge bg-primary">🔥 Preparing</span>
+                        {% elif order.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">⏳ Pending</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if order %}
+                <p class="text-muted small mb-2">
+                    Order #{{ order.daily_order_number }} · {{ order.items.count }} item(s)
+                </p>
+                <div class="bg-light rounded p-2 small mb-2">
+                    {% for item in order.items.all|slice:":3" %}
+                        <div>{{ item.quantity }}× {{ item.menu_item.name }}</div>
+                    {% endfor %}
+                    {% if order.items.count > 3 %}
+                        <div class="text-muted">+ {{ order.items.count|add:"-3" }} more…</div>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between small text-muted">
+    <span>Total: Rs. Rs.{{ order.total_price }}</span>
+    <span>
+        Since {{ order.created_at|time:"H:i" }}
+        <span id="elapsed-{{ table.number }}" class="badge bg-secondary ms-2">
+            -- min
+        </span>
+    </span>
+</div>
+                {% endif %}
+            </div>
+        </a>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Free Tables -->
+{% if free_tables %}
+<h6 class="fw-bold text-success mb-3">
+    🟢 Free Tables <span class="badge bg-secondary ms-1">{{ free_tables|length }}</span>
+</h6>
+<div class="row g-3">
+    {% for table in free_tables %}
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <a href="{% url 'table_order' table.id %}" class="text-decoration-none">
+            <div class="card text-center p-3">
+                <div class="fw-bold fs-4">{{ table.number }}</div>
+                <span class="badge bg-success mt-1">Free</span>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Real-time update script -->
+<script>
+const STATUS_COLORS = {
+    'served':    'bg-success',
+    'preparing': 'bg-primary',
+    'pending':   'bg-warning text-dark',
+};
+const STATUS_LABELS = {
+    'served':    '✅ Ready',
+    'preparing': '🔥 Preparing',
+    'pending':   '⏳ Pending',
+};
+
+function updateDashboard() {
+    fetch('/api/dashboard/')
+        .then(r => r.json())
+        .then(data => {
+            // Update stats
+            document.getElementById('stat-occupied').textContent = data.occupied;
+            document.getElementById('stat-free').textContent     = data.free;
+            document.getElementById('stat-ready').textContent    = data.ready_count;
+            document.getElementById('stat-pending').textContent  = data.pending_count;
+
+            // Update ready banner
+            const banner   = document.getElementById('ready-banner');
+            const initBanner = document.getElementById('ready-banner-initial');
+            const tagsDiv  = document.getElementById('ready-tags');
+
+            if (data.ready_count > 0) {
+                if (initBanner) initBanner.style.display = 'none';
+                banner.style.display = 'flex';
+                tagsDiv.innerHTML = data.ready_orders.map(o =>
+                    `<a href="/table/Rs. ${o.table_id}/" class="badge bg-success text-decoration-none fs-6">
+                        Table Rs. ${o.table}
+                    </a>`
+                ).join('');
+            } else {
+                banner.style.display = 'none';
+                if (initBanner) initBanner.style.display = 'none';
+            }
+
+            // Update active table badges
+            data.active.forEach(order => {
+                const badge = document.querySelector(
+                    `.table-status-badge[data-table="Rs. ${order.table_number}"]`
+                );
+                if (badge) {
+                    badge.className = `badge Rs. ${STATUS_COLORS[order.status]} table-status-badge`;
+                    badge.setAttribute('data-table', order.table_number);
+                    badge.textContent = STATUS_LABELS[order.status];
+                }
+            });
+        })
+        .catch(() => {
+            document.getElementById('live-badge').className = 'badge bg-danger';
+            document.getElementById('live-badge').textContent = 'Offline';
+        });
+}
+
+// Poll every 5 seconds
+setInterval(updateDashboard, 5000);
+
+// Live clock
+function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const clockEl = document.getElementById('live-clock');
+    if (clockEl) clockEl.textContent = timeStr;
+}
+
+// Update elapsed time on table cards
+function updateElapsedTimes() {
+    fetch('/api/dashboard/')
+        .then(r => r.json())
+        .then(data => {
+            data.active.forEach(order => {
+                const el = document.getElementById(`elapsed-Rs. ${order.table_number}`);
+                if (el) {
+                    const mins = order.minutes_ago;
+                    if (mins < 60) {
+                        el.textContent = `Rs. ${mins} min ago`;
+                        el.className = mins > 30
+                            ? 'badge bg-danger ms-2'
+                            : 'badge bg-secondary ms-2';
+                    } else {
+                        const hrs = Math.floor(mins / 60);
+                        el.textContent = `Rs. ${hrs}h Rs. ${mins % 60}m ago`;
+                        el.className = 'badge bg-danger ms-2';
+                    }
+                }
+            });
+        });
+}
+
+setInterval(updateClock, 1000);
+setInterval(updateElapsedTimes, 10000);
+updateClock();
+updateElapsedTimes();
+</script>
+
+{% endblock %}

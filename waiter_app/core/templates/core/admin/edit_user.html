@@ -1,0 +1,29 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Edit User{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0">Edit User — {{ u.username }}</h4>
+    <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-12 col-md-6">
+<div class="card p-4">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Role</label>
+            <select name="role" class="form-select">
+                <option value="waiter" {% if u.profile.role == 'waiter' %}selected{% endif %}>Waiter</option>
+                <option value="chef"   {% if u.profile.role == 'chef'   %}selected{% endif %}>Chef</option>
+                <option value="admin"  {% if u.profile.role == 'admin'  %}selected{% endif %}>Admin</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+    </form>
+</div>
+</div>
+</div>
+
+{% endblock %}

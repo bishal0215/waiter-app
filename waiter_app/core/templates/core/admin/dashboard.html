@@ -1,0 +1,97 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0">⚙️ Admin Dashboard</h4>
+    <span class="text-muted small">Welcome, {{ request.user.username }}</span>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-primary">{{ total_orders }}</div>
+            <div class="text-muted small">Total Orders</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-4 text-success">Rs.{{ total_revenue }}</div>
+            <div class="text-muted small">Total Revenue</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-warning">{{ paid_count }}</div>
+            <div class="text-muted small">Paid Orders</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-info">{{ total_users }}</div>
+            <div class="text-muted small">Total Users</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-secondary">{{ total_tables }}</div>
+            <div class="text-muted small">Tables</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center p-3">
+            <div class="fw-bold fs-2 text-danger">{{ total_items }}</div>
+            <div class="text-muted small">Menu Items</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="card p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Recent Orders</h5>
+        <a href="{% url 'admin_orders' %}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle small">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Table</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td>
+                        #{{ order.daily_order_number }}
+                        <small class="text-muted d-block">ID: {{ order.id }}</small>
+                    </td>
+                    <td>Table {{ order.table.number }}</td>
+                    <td>{{ order.items.count }}</td>
+                    <td>Rs.{{ order.total_price }}</td>
+                    <td>
+                        {% if order.status == 'paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif order.status == 'served' %}
+                            <span class="badge bg-info">Served</span>
+                        {% elif order.status == 'preparing' %}
+                            <span class="badge bg-primary">Preparing</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.created_at|date:"d M, H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

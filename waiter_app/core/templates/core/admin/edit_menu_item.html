@@ -1,0 +1,67 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Edit Menu Item{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0">Edit — {{ item.name }}</h4>
+    <a href="{% url 'admin_menu' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-12 col-md-6">
+<div class="card p-4">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Name</label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ item.name }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Price</label>
+            <input type="number" name="price" step="0.01" class="form-control"
+                   value="{{ item.price }}" required>
+        </div>
+        <div class="mb-3">
+    <label class="form-label fw-semibold">Category</label>
+    <select name="category" class="form-select" id="category-select">
+        <option value="food"    {% if item.category == 'food'    %}selected{% endif %}>Food</option>
+        <option value="drink"   {% if item.category == 'drink'   %}selected{% endif %}>Drink</option>
+        <option value="dessert" {% if item.category == 'dessert' %}selected{% endif %}>Dessert</option>
+    </select>
+</div>
+
+<div class="mb-3" id="food-type-section" 
+     {% if item.category == 'food' %}
+         style="display:block;"
+     {% else %}
+         style="display:none;"
+     {% endif %}>
+     
+    <label class="form-label fw-semibold">Food Type</label>
+    <select name="food_type" class="form-select">
+        <option value="veg"     {% if item.food_type == 'veg'     %}selected{% endif %}>🟢 Vegetarian</option>
+        <option value="non_veg" {% if item.food_type == 'non_veg' %}selected{% endif %}>🔴 Non-Vegetarian</option>
+    </select>
+</div>
+
+<script>
+const catSelect = document.getElementById('category-select');
+const foodType  = document.getElementById('food-type-section');
+
+catSelect.addEventListener('change', function() {
+    foodType.style.display = this.value === 'food' ? 'block' : 'none';
+});
+</script>
+        <div class="mb-4 form-check">
+            <input type="checkbox" name="is_available" class="form-check-input"
+                   id="available" {% if item.is_available %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="available">Available</label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+    </form>
+</div>
+</div>
+</div>
+
+{% endblock %}

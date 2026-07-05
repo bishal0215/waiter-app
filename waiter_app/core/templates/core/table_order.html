@@ -1,0 +1,181 @@
+{% extends 'core/base.html' %}
+{% block title %}Table {{ table.number }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">🍽️ Table {{ table.number }}</h4>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+</div>
+
+<div class="row g-4">
+
+    <!-- LEFT: Menu -->
+    <div class="col-12 col-lg-7">
+        <div class="card p-3">
+            <h5 class="fw-bold mb-3">Menu</h5>
+            {% if error %}
+        <div class="alert alert-danger py-2 small mb-3">
+            ⚠️ {{ error }}
+        </div>
+        {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                {% regroup menu_items by category as category_list %}
+                {% for category in category_list %}
+                    <div class="text-uppercase text-muted fw-bold small mb-2 mt-3"
+                         style="letter-spacing:.08em;">
+                        {{ category.grouper }}
+                    </div>
+                    {% for item in category.list %}
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <div>
+                            <div class="fw-semibold d-flex align-items-center gap-2">
+    {% if item.category == 'food' %}
+        {% if item.food_type == 'veg' %}
+            <span style="
+                display:inline-block;
+                width:16px; height:16px;
+                border:2px solid #16a34a;
+                border-radius:3px;
+                background:white;
+                position:relative;">
+                <span style="
+                    position:absolute;
+                    top:50%; left:50%;
+                    transform:translate(-50%,-50%);
+                    width:7px; height:7px;
+                    background:#16a34a;
+                    border-radius:50%;
+                    display:block;">
+                </span>
+            </span>
+        {% elif item.food_type == 'non_veg' %}
+            <span style="
+                display:inline-block;
+                width:16px; height:16px;
+                border:2px solid #dc2626;
+                border-radius:3px;
+                background:white;
+                position:relative;">
+                <span style="
+                    position:absolute;
+                    top:50%; left:50%;
+                    transform:translate(-50%,-50%);
+                    width:7px; height:7px;
+                    background:#dc2626;
+                    border-radius:50%;
+                    display:block;">
+                </span>
+            </span>
+        {% endif %}
+    {% endif %}
+    {{ item.name }}
+</div>
+                            <div class="text-primary small">Rs.{{ item.price }}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" name="quantity_{{ item.id }}"
+                                   min="0" value="0"
+                                   class="form-control form-control-sm text-center"
+                                   style="width:65px;">
+                            <input type="text" name="note_{{ item.id }}"
+                                   placeholder="Note"
+                                   class="form-control form-control-sm"
+                                   style="width:110px;">
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endfor %}
+                <button type="submit" class="btn btn-primary w-100 mt-3">
+                    <i class="bi bi-plus-circle"></i> Add to Order
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT: Current Order -->
+    <div class="col-12 col-lg-5">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">
+             Current Order
+            {% if order %}
+                <small class="text-muted fs-6">#{{ order.daily_order_number }}</small>
+             {% endif %}
+            </h5>
+        {% if order %}
+            {% if order.status == 'served' %}
+                <span class="badge bg-success">✅ Served</span>
+            {% elif order.status == 'preparing' %}
+                <span class="badge bg-primary">🔥 Preparing</span>
+            {% elif order.status == 'pending' %}
+                <span class="badge bg-warning text-dark">⏳ Pending</span>
+            {% endif %}
+        {% endif %}
+        </div>
+
+            {% if order and order.items.all %}
+    {% for item in order.items.all %}
+        <div class="d-flex justify-content-between align-items-start py-2 border-bottom small">
+            <div>
+                <span class="fw-semibold">{{ item.quantity }}×</span> {{ item.menu_item.name }}
+                {% if item.note %}
+                    <div class="text-warning">📝 {{ item.note }}</div>
+                {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span>Rs.{{ item.subtotal }}</span>
+                <a href="{% url 'remove_order_item' item.id %}"
+                   class="btn btn-danger btn-sm py-0 px-2"
+                   onclick="return confirm('Remove this item?')">✕</a>
+            </div>
+        </div>
+    {% endfor %}
+
+    <div class="d-flex justify-content-between fw-bold mt-3 mb-3 fs-6">
+        <span>Total</span>
+        <span>Rs.{{ order.total_price }}</span>
+    </div>
+
+    <!-- Always show View Bill -->
+    <a href="{% url 'bill' order.id %}" class="btn btn-dark w-100 mb-2">
+        🧾 View Bill
+    </a>
+
+    <!-- Show Mark as Served until paid -->
+    {% if order.status != 'paid' %}
+        {% if order.status == 'served' %}
+            <div class="alert alert-success text-center py-2 mb-2 small">
+                ✅ Kitchen marked this ready!
+            </div>
+        {% endif %}
+        <a href="{% url 'mark_order_served' order.id %}"
+           class="btn btn-success w-100"
+           onclick="return confirm('Mark this order as served and save to records?')">
+            ✅ Mark as Served
+        </a>
+    {% else %}
+        <div class="alert alert-info text-center py-2 small">
+            ✅ Order completed and saved to records.
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="text-center text-muted py-4">
+        <i class="bi bi-basket" style="font-size:2rem;"></i>
+        <p class="mt-2 small">No items yet. Add from the menu.</p>
+    </div>
+{% endif %}
+<script>
+document.querySelector('form').addEventListener('submit', function(e) {
+    const quantities = document.querySelectorAll('input[type="number"]');
+    const hasItems = Array.from(quantities).some(q => parseInt(q.value) > 0);
+    if (!hasItems) {
+        e.preventDefault();
+        alert('⚠️ Please select at least one item before adding to order!');
+    }
+});
+</script>
+{% endblock content %}

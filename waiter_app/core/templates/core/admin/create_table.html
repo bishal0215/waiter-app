@@ -1,0 +1,25 @@
+{% extends 'core/admin/base_admin.html' %}
+{% block title %}Add Table{% endblock %}
+{% block content %}
+
+<div class="topbar">
+    <h4 class="fw-bold mb-0">Add Table</h4>
+    <a href="{% url 'admin_tables' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-12 col-md-6">
+<div class="card p-4">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Table Number</label>
+            <input type="number" name="number" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add Table</button>
+    </form>
+</div>
+</div>
+</div>
+
+{% endblock %}
